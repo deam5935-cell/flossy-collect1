@@ -1,0 +1,99 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "marufadam7777@gmail.com"
+      );
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // Validation Blueprints
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'price', 'category', 'gender', 'description', 'images', 'stock', 'isFeatured', 'createdAt', 'updatedAt']) &&
+             data.keys().size() == 10 &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string &&
+             data.gender in ['Men', 'Women', 'Kids', 'Babies', 'Unisex'] &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.images is list && data.images.size() <= 10 &&
+             data.stock is number && data.stock >= 0 &&
+             data.isFeatured is bool &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidOrder(data) {
+      return data.keys().hasAll(['items', 'total', 'status', 'customerInfo', 'createdAt', 'updatedAt', 'userId']) &&
+             data.keys().size() == 7 &&
+             data.items is list && data.items.size() > 0 &&
+             data.total is number && data.total >= 0 &&
+             data.status in ['pending', 'processing', 'delivered'] &&
+             data.customerInfo is map &&
+             data.createdAt == request.time &&
+             data.updatedAt == request.time &&
+             data.userId == request.auth.uid;
+    }
+
+    // Collection Rules
+
+    // Products
+    match /products/{productId} {
+      allow read: if true; // Public catalog
+      allow create: if isAdmin() && isValidProduct(incoming());
+      allow update: if isAdmin() && isValidProduct(incoming()) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'category', 'gender', 'description', 'images', 'stock', 'isFeatured', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isVerified() && isValidOrder(incoming());
+      allow update: if isSignedIn() && (
+        (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+        (resource.data.userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['updatedAt']))
+      );
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && request.auth.uid == userId && (
+        !incoming().keys().hasAny(['isAdmin']) || isAdmin()
+      );
+    }
+
+    // Site Content
+    match /content/config {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Admin list
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false; // Only manageable via console or service account
+    }
+  }
+}

@@ -1,0 +1,45 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --color-gold: #C5A059;
+  --color-gold-light: #DFBF8E;
+  --color-dark: #0A0A0A;
+  --font-sans: "Inter", "Montserrat", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Playfair Display", serif;
+
+  @keyframes marquee {
+    from { transform: translateX(0); }
+    to { transform: translateX(-50%); }
+  }
+  --animate-marquee: marquee 30s linear infinite;
+}
+
+
+@layer base {
+  body {
+    @apply bg-black text-white font-sans antialiased;
+  }
+}
+
+@layer components {
+  .premium-btn {
+    @apply px-8 py-3 border border-gold/30 rounded-none bg-transparent text-gold uppercase tracking-widest text-xs font-medium transition-all duration-300 hover:bg-gold hover:text-black;
+  }
+  
+  .premium-btn-solid {
+    @apply px-8 py-3 bg-gold text-black uppercase tracking-widest text-xs font-medium transition-all duration-300 border border-gold hover:bg-transparent hover:text-gold;
+  }
+
+  .micro-label {
+    @apply text-[10px] uppercase tracking-[0.2em] font-medium text-gold/60;
+  }
+
+  .input-luxury {
+    @apply bg-transparent border-b border-white/20 px-0 py-2 focus:border-gold outline-none transition-colors w-full;
+  }
+}
+
+.luxury-card-overlay {
+  background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+}

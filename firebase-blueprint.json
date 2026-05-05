@@ -1,0 +1,133 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile information",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "isAdmin": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "isAdmin"]
+    },
+    "Product": {
+      "title": "Product",
+      "description": "A fashion product item",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { "type": "string" },
+        "gender": { "type": "string", "enum": ["Men", "Women", "Kids", "Babies", "Unisex"] },
+        "description": { "type": "string" },
+        "images": { "type": "array" },
+        "stock": { "type": "number" },
+        "isFeatured": { "type": "boolean" },
+        "specs": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "price", "category", "gender", "stock"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "A customer purchase order",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "items": { "type": "array" },
+        "total": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "processing", "shipped", "delivered", "cancelled"] },
+        "paymentStatus": { "type": "string", "enum": ["pending", "paid", "failed"] },
+        "paymentMethod": { "type": "string", "enum": ["momo", "card", "bank_transfer"] },
+        "paymentDetails": { "type": "object" },
+        "customerInfo": { "type": "object" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["total", "status", "paymentStatus", "paymentMethod", "items", "customerInfo", "createdAt"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Product category",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "slug": { "type": "string" }
+      },
+      "required": ["name", "slug"]
+    },
+    "Review": {
+      "title": "Review",
+      "description": "Product customer review",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "rating": { "type": "number" },
+        "comment": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "rating", "comment", "createdAt"]
+    },
+    "Content": {
+      "title": "Content",
+      "description": "Homepage and branding content config",
+      "type": "object",
+      "properties": {
+        "heroTitle": { "type": "string" },
+        "heroSubtitle": { "type": "string" },
+        "aboutText": { "type": "string" },
+        "promoBanner": { "type": "string" }
+      }
+    },
+    "Message": {
+      "title": "Message",
+      "description": "Customer contact message",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "subject": { "type": "string" },
+        "message": { "type": "string" },
+        "status": { "type": "string", "enum": ["unread", "read", "replied"] },
+        "adminNotes": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "email", "subject", "message", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User records"
+    },
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Inventory products"
+    },
+    "/products/{productId}/reviews/{reviewId}": {
+      "schema": "Review",
+      "description": "Product specific reviews"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Sales orders"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Available categories"
+    },
+    "/content/config": {
+      "schema": "Content",
+      "description": "Site-wide configuration"
+    },
+    "/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Customer contact messages"
+    }
+  }
+}

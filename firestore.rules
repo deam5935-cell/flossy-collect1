@@ -1,0 +1,132 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isVerified() { return isSignedIn() && request.auth.token.email_verified == true; }
+    function isAdmin() { 
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        request.auth.token.email == "marufadam7777@gmail.com" ||
+        request.auth.token.email == "r9628606@gmail.com"
+      );
+    }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+
+    // --- Entity Validations ---
+    function isValidProduct(data, isUpdate) {
+      let requiredFields = ['name', 'price', 'category', 'gender', 'description', 'images', 'stock', 'isFeatured', 'createdAt', 'updatedAt'];
+      return data.keys().hasAll(requiredFields) &&
+             (data.keys().size() >= 10 && data.keys().size() <= 11) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.category is string &&
+             data.gender in ['Men', 'Women', 'Kids', 'Babies', 'Unisex'] &&
+             data.description is string && data.description.size() <= 2000 &&
+             data.images is list && data.images.size() <= 10 &&
+             data.stock is number && data.stock >= 0 &&
+             data.isFeatured is bool &&
+             (isUpdate ? data.createdAt == existing().createdAt : data.createdAt == request.time) &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidOrder(data, isUpdate) {
+      let requiredFields = ['items', 'total', 'status', 'paymentStatus', 'paymentMethod', 'customerInfo', 'createdAt', 'updatedAt', 'userId'];
+      return data.keys().hasAll(requiredFields) &&
+             (data.keys().size() >= 9 && data.keys().size() <= 10) &&
+             data.items is list && data.items.size() > 0 &&
+             data.total is number && data.total >= 0 &&
+             data.status in ['pending', 'processing', 'shipped', 'delivered', 'cancelled'] &&
+             data.paymentStatus in ['pending', 'paid', 'failed'] &&
+             data.paymentMethod in ['momo', 'card', 'bank_transfer'] &&
+             data.customerInfo is map &&
+             data.userId == request.auth.uid &&
+             (isUpdate ? data.createdAt == existing().createdAt : data.createdAt == request.time) &&
+             data.updatedAt == request.time;
+    }
+
+    function isValidMessage(data, isUpdate) {
+      let requiredFields = ['name', 'email', 'subject', 'message', 'status', 'createdAt'];
+      return data.keys().hasAll(requiredFields) &&
+             (data.keys().size() >= 6 && data.keys().size() <= 8) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 100 &&
+             data.subject is string && data.subject.size() > 0 && data.subject.size() <= 200 &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 5000 &&
+             data.status in ['unread', 'read', 'replied'] &&
+             (isUpdate ? data.createdAt == existing().createdAt : data.createdAt == request.time);
+    }
+
+    // --- Collection Rules ---
+
+    // Messages
+    match /messages/{messageId} {
+      allow list: if isAdmin();
+      allow get: if isAdmin();
+      allow create: if isValidMessage(incoming(), false) && isValidId(messageId);
+      allow update: if isAdmin() && isValidMessage(incoming(), true);
+      allow delete: if isAdmin();
+    }
+
+    // Products
+    match /products/{productId} {
+      allow read: if true;
+      allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming(), false);
+      allow update: if isAdmin() && isValidProduct(incoming(), true) && (
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'category', 'gender', 'description', 'images', 'stock', 'isFeatured', 'updatedAt'])
+      );
+      allow delete: if isAdmin();
+
+      match /reviews/{reviewId} {
+        allow read: if true;
+        allow create: if isVerified() && 
+                      incoming().userId == request.auth.uid &&
+                      incoming().rating >= 1 && incoming().rating <= 5 &&
+                      incoming().comment is string && incoming().comment.size() <= 1000 &&
+                      incoming().createdAt == request.time;
+        allow delete: if isAdmin() || (isSignedIn() && resource.data.userId == request.auth.uid);
+      }
+    }
+
+    // Categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin() && isValidId(categoryId);
+    }
+
+    // Orders
+    match /orders/{orderId} {
+      allow list: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow get: if isSignedIn() && (isAdmin() || resource.data.userId == request.auth.uid);
+      allow create: if isSignedIn() && isValidId(orderId) && isValidOrder(incoming(), false);
+      allow update: if isAdmin() && isValidOrder(incoming(), true) && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'paymentStatus', 'updatedAt']);
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow write: if isSignedIn() && request.auth.uid == userId && (
+        !incoming().keys().hasAny(['isAdmin']) || isAdmin()
+      );
+    }
+
+    // Site Content
+    match /content/config {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+    
+    // Auth Admins
+    match /admins/{adminId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+  }
+}
