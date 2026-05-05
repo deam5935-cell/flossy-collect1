@@ -80,7 +80,7 @@ service cloud.firestore {
       allow read: if true;
       allow create: if isAdmin() && isValidId(productId) && isValidProduct(incoming(), false);
       allow update: if isAdmin() && isValidProduct(incoming(), true) && (
-        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'category', 'gender', 'description', 'images', 'stock', 'isFeatured', 'updatedAt'])
+        incoming().diff(existing()).affectedKeys().hasOnly(['name', 'price', 'category', 'gender', 'description', 'images', 'stock', 'isFeatured', 'updatedAt', 'specs'])
       );
       allow delete: if isAdmin();
 

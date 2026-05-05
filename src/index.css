@@ -17,8 +17,14 @@
 
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+  }
   body {
-    @apply bg-black text-white font-sans antialiased;
+    @apply bg-black text-white font-sans antialiased overflow-x-hidden;
+  }
+  img {
+    content-visibility: auto;
   }
 }
 

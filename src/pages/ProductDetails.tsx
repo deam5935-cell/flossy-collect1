@@ -115,7 +115,7 @@ export default function ProductDetails() {
                   activeImage === idx ? "border-gold" : "border-transparent opacity-50 hover:opacity-100"
                 )}
               >
-                <img src={img} className="w-full h-full object-cover" alt={`View ${idx}`} />
+                <img src={img} className="w-full h-full object-cover" alt={`View ${idx}`} loading="lazy" decoding="async" />
               </button>
             ))}
           </div>
@@ -213,7 +213,7 @@ export default function ProductDetails() {
               {related.map(item => (
                 <Link key={item.id} to={`/product/${item.id}`} className="group">
                   <div className="aspect-[3/4] bg-zinc-900 mb-4 overflow-hidden">
-                    <img src={item.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform" />
+                    <img src={item.images[0]} className="w-full h-full object-cover group-hover:scale-105 transition-transform" alt={item.name} loading="lazy" decoding="async" />
                   </div>
                   <h5 className="text-[10px] uppercase tracking-widest text-white/50 mb-1">{item.name}</h5>
                   <p className="text-xs text-gold">{formatPrice(item.price)}</p>
@@ -237,7 +237,7 @@ export default function ProductDetails() {
               <h5 className="text-[10px] text-white/60 uppercase tracking-widest max-w-[120px] truncate">{nextProduct.name}</h5>
             </div>
             <div className="w-16 h-20 bg-zinc-900 overflow-hidden shrink-0">
-               <img src={nextProduct.images[0]} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" />
+               <img src={nextProduct.images[0]} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all" alt={nextProduct.name} loading="lazy" />
             </div>
             <ChevronRight className="text-gold group-hover:translate-x-1 transition-transform" />
           </Link>

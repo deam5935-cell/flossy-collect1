@@ -151,6 +151,8 @@ export default function Shop() {
                         src={product.images[0]} 
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                       />
                       
                       {/* Overlay Controls */}
@@ -245,7 +247,7 @@ export default function Shop() {
               <div className="w-full md:w-1/2 overflow-y-auto aspect-square md:aspect-auto">
                 <div className="grid grid-cols-1 gap-2 p-2">
                   {quickViewProduct.images.map((img, i) => (
-                    <img key={i} src={img} className="w-full h-full object-cover" alt={quickViewProduct.name} />
+                    <img key={i} src={img} className="w-full h-full object-cover" alt={quickViewProduct.name} loading="lazy" decoding="async" />
                   ))}
                 </div>
               </div>

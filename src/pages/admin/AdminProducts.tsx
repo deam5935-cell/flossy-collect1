@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, query, getDocs, addDoc, updateDoc, deleteDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../../lib/firebase';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage, handleFirestoreError, OperationType } from '../../lib/firebase';
 import { Product } from '../../types';
 import { formatPrice, cn } from '../../lib/utils';
 import { Plus, Edit2, Trash2, X, Upload, Loader2, Search, Filter, Database } from 'lucide-react';
@@ -19,6 +20,7 @@ export default function AdminProducts() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [batchItems, setBatchItems] = useState<any[]>([]);
 
   // Form State
@@ -94,51 +96,102 @@ export default function AdminProducts() {
   };
 
   const addToBatch = () => {
-    if (!form.name || !form.price || !form.stock) {
-      alert("Please fill name, price, and stock for this item.");
+    const name = form.name.trim();
+    const price = parseFloat(form.price);
+    const stock = parseInt(form.stock) || 0; // Default to 0 if empty
+
+    if (!name || isNaN(price)) {
+      alert("Please ensure the Name and Price are correctly filled.");
       return;
     }
+
     const data = {
       ...form,
-      price: parseFloat(form.price),
-      stock: parseInt(form.stock),
+      name,
+      price,
+      stock,
       updatedAt: serverTimestamp(),
       createdAt: serverTimestamp()
     };
-    setBatchItems([...batchItems, data]);
-    // Reset form for next item
-    setForm({ ...form, name: '', price: '', stock: '', description: '', images: [], specs: {} });
+
+    setBatchItems(prev => [...prev, data]);
+    // Reset form for next item but keep category/gender for faster entry
+    setForm({ 
+      ...form, 
+      name: '', 
+      price: '', 
+      stock: '', 
+      description: '', 
+      images: [], 
+      specs: {},
+      isFeatured: false 
+    });
+    // Add small feedback
+    console.log("Item added to batch:", name);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (actionLoading) return;
+
     setActionLoading(true);
     try {
       if (editingProduct) {
         const data = {
           ...form,
-          price: parseFloat(form.price),
-          stock: parseInt(form.stock),
+          price: parseFloat(form.price) || 0,
+          stock: parseInt(form.stock) || 0,
           updatedAt: serverTimestamp(),
         };
         const docRef = doc(db, 'products', editingProduct.id);
         await updateDoc(docRef, data);
+        alert("Portfolio piece updated successfully.");
       } else {
-        const itemsToSave = batchItems.length > 0 ? batchItems : [{
-          ...form,
-          price: parseFloat(form.price),
-          stock: parseInt(form.stock),
-          updatedAt: serverTimestamp(),
-          createdAt: serverTimestamp()
-        }];
+        let itemsToSave = [...batchItems];
+        
+        // Check if the current form has unsaved data
+        const currentName = form.name.trim();
+        const currentPrice = parseFloat(form.price);
+        
+        if (currentName && !isNaN(currentPrice)) {
+          itemsToSave.push({
+            ...form,
+            name: currentName,
+            price: currentPrice,
+            stock: parseInt(form.stock) || 0,
+            updatedAt: serverTimestamp(),
+            createdAt: serverTimestamp()
+          });
+        }
 
+        if (itemsToSave.length === 0) {
+          alert("Nothing to save. Please add items to the batch or fill the form details (Name and Price).");
+          setActionLoading(false);
+          return;
+        }
+
+        console.log(`Attempting to save ${itemsToSave.length} items...`);
+
+        // Save items sequentially or in parallel
         for (const item of itemsToSave) {
           await addDoc(collection(db, 'products'), item);
         }
+
+        alert(itemsToSave.length > 1 ? `${itemsToSave.length} pieces successfully uploaded to catalog.` : "New piece successfully added.");
       }
       setIsModalOpen(false);
+      setBatchItems([]);
       fetchProducts();
     } catch (err) {
+      console.error("Submission Error Details:", err);
+      const isPermissionErr = err instanceof Error && (err.message.includes('permission-denied') || err.message.includes('insufficient permissions'));
+      
+      if (isPermissionErr) {
+        alert("Security Error: You do not have permission to write to this database. Please check your admin status.");
+      } else {
+        alert(`Save failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+      
       handleFirestoreError(err, editingProduct ? OperationType.UPDATE : OperationType.CREATE, 'products');
     } finally {
       setActionLoading(false);
@@ -184,6 +237,32 @@ export default function AdminProducts() {
     const newSpecs = { ...form.specs };
     delete newSpecs[key];
     setForm({ ...form, specs: newSpecs });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    setUploading(true);
+    const newImages = [...form.images];
+
+    try {
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (newImages.length >= 5) break;
+
+        const storageRef = ref(storage, `products/${Date.now()}_${file.name}`);
+        const snapshot = await uploadBytes(storageRef, file);
+        const downloadURL = await getDownloadURL(snapshot.ref);
+        newImages.push(downloadURL);
+      }
+      setForm({ ...form, images: newImages });
+    } catch (err) {
+      console.error("Upload error:", err);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
@@ -395,27 +474,67 @@ export default function AdminProducts() {
                 </div>
 
                 <div>
-                   <label className="micro-label mb-4 block">Product Images (Paste URLs)</label>
+                   <label className="micro-label mb-4 block">Product Images</label>
+                   
+                   <div className="grid grid-cols-2 sm:grid-cols-5 gap-4 mb-6">
+                      {form.images.map((img, idx) => (
+                        <div key={idx} className="relative aspect-[3/4] bg-zinc-900 border border-white/10 group/img">
+                           <img src={img} className="w-full h-full object-cover" alt="Preview" />
+                           <button 
+                            type="button"
+                            onClick={() => setForm({...form, images: form.images.filter((_, i) => i !== idx)})}
+                            className="absolute -top-2 -right-2 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover/img:opacity-100 transition-opacity"
+                           >
+                             <Trash2 size={12} />
+                           </button>
+                        </div>
+                      ))}
+                      {form.images.length < 5 && (
+                        <label className={cn(
+                          "aspect-[3/4] border-2 border-dashed border-white/10 hover:border-gold/50 flex flex-col items-center justify-center cursor-pointer transition-colors group",
+                          uploading && "opacity-50 cursor-not-allowed"
+                        )}>
+                           <input 
+                            type="file" 
+                            accept="image/*" 
+                            multiple 
+                            onChange={handleImageUpload} 
+                            disabled={uploading}
+                            className="hidden" 
+                           />
+                           {uploading ? (
+                             <Loader2 size={20} className="animate-spin text-gold" />
+                           ) : (
+                             <>
+                               <Upload size={20} className="text-white/20 group-hover:text-gold transition-colors mb-2" />
+                               <span className="text-[8px] uppercase tracking-widest text-white/40 group-hover:text-gold/60">Upload</span>
+                             </>
+                           )}
+                        </label>
+                      )}
+                   </div>
+
                    <div className="space-y-2">
+                     <p className="text-[10px] text-white/30 uppercase tracking-widest mb-2">Or Paste URLs</p>
                      {form.images.map((img, idx) => (
-                       <div key={idx} className="flex space-x-2">
-                          <input 
-                            value={img} 
-                            onChange={e => {
-                              const newImages = [...form.images];
-                              newImages[idx] = e.target.value;
-                              setForm({...form, images: newImages});
-                            }}
-                            className="input-luxury flex-grow" placeholder="https://..." 
-                          />
-                          <button type="button" onClick={() => setForm({...form, images: form.images.filter((_, i) => i !== idx)})} className="text-red-500 px-2"><Trash2 size={16} /></button>
-                       </div>
-                     ))}
-                     {form.images.length < 5 && (
-                       <button type="button" onClick={() => setForm({...form, images: [...form.images, '']})} className="text-[10px] uppercase text-gold/60 mt-2 flex items-center hover:text-gold transition-colors">
-                         <Plus size={12} className="mr-1" /> Add image slot
-                       </button>
-                     )}
+                        <div key={idx} className="flex space-x-2">
+                           <input 
+                             value={img} 
+                             onChange={e => {
+                               const newImages = [...form.images];
+                               newImages[idx] = e.target.value;
+                               setForm({...form, images: newImages});
+                             }}
+                             className="input-luxury flex-grow" placeholder="https://..." 
+                           />
+                           <button type="button" onClick={() => setForm({...form, images: form.images.filter((_, i) => i !== idx)})} className="text-red-500 px-2"><Trash2 size={16} /></button>
+                        </div>
+                      ))}
+                      {form.images.length < 5 && (
+                        <button type="button" onClick={() => setForm({...form, images: [...form.images, '']})} className="text-[10px] uppercase text-gold/60 mt-2 flex items-center hover:text-gold transition-colors">
+                          <Plus size={12} className="mr-1" /> Add URL slot
+                        </button>
+                      )}
                    </div>
                 </div>
 
@@ -469,7 +588,11 @@ export default function AdminProducts() {
                         {batchItems.map((item, idx) => (
                           <div key={idx} className="flex justify-between items-center bg-white/[0.02] border border-white/5 p-3 rounded-sm">
                             <span className="text-[10px] uppercase tracking-widest text-white/60">{item.name}</span>
-                            <button onClick={() => setBatchItems(batchItems.filter((_, i) => i !== idx))} className="text-red-500/40 hover:text-red-500">
+                            <button 
+                              type="button"
+                              onClick={() => setBatchItems(batchItems.filter((_, i) => i !== idx))} 
+                              className="text-red-500/40 hover:text-red-500"
+                            >
                               <X size={14} />
                             </button>
                           </div>

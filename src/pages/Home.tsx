@@ -41,10 +41,10 @@ export default function Home() {
   }, []);
 
   const categories = [
-    { name: 'Women', title: 'The Feminine Edit', image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=1974&auto=format&fit=crop' },
-    { name: 'Men', title: 'The Modern Gents', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=2071&auto=format&fit=crop' },
-    { name: 'Kids', title: 'Mini Style', image: 'https://images.unsplash.com/photo-1519702489929-e8f001f2722b?q=80&w=1964&auto=format&fit=crop' },
-    { name: 'Accessories', title: 'Timeless Jewelry', image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?q=80&w=1974&auto=format&fit=crop' },
+    { name: 'Women', title: 'The Feminine Edit', image: 'https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=70&w=800&auto=format&fit=crop' },
+    { name: 'Men', title: 'The Modern Gents', image: 'https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=70&w=800&auto=format&fit=crop' },
+    { name: 'Kids', title: 'Mini Style', image: 'https://images.unsplash.com/photo-1519702489929-e8f001f2722b?q=70&w=800&auto=format&fit=crop' },
+    { name: 'Accessories', title: 'Timeless Jewelry', image: 'https://images.unsplash.com/photo-1617038220319-276d3cfab638?q=70&w=800&auto=format&fit=crop' },
   ];
 
   return (
@@ -69,6 +69,8 @@ export default function Home() {
             src="https://images.unsplash.com/photo-1490481651871-ab68de25d43d?q=80&w=2070&auto=format&fit=crop" 
             className="w-full h-full object-cover opacity-60 scale-105"
             alt="Hero Background"
+            loading="eager"
+            fetchPriority="high"
           />
           <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent" />
         </div>
@@ -131,6 +133,8 @@ export default function Home() {
                   src={cat.image} 
                   className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 opacity-70 group-hover:opacity-100" 
                   alt={cat.name}
+                  loading="lazy"
+                  decoding="async"
                 />
                 <div className="absolute inset-0 luxury-card-overlay flex flex-col justify-end p-8">
                   <h3 className="text-3xl font-serif mb-2">{cat.name}</h3>
@@ -175,6 +179,8 @@ export default function Home() {
                         src={product.images[0]} 
                         className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110" 
                         alt={product.name}
+                        loading="lazy"
+                        decoding="async"
                       />
                       <div className="absolute top-4 right-4">
                         <span className="bg-gold text-black text-[9px] font-bold px-2 py-1 uppercase tracking-tighter">New</span>
@@ -281,6 +287,8 @@ export default function Home() {
                       src={product.images[0]} 
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" 
                       alt={product.name}
+                      loading="lazy"
+                      decoding="async"
                     />
                     <div className="absolute top-4 left-4">
                        <span className="bg-black/80 text-[10px] text-gold border border-gold/30 px-2 py-1 uppercase tracking-widest">Featured</span>
@@ -332,9 +340,11 @@ export default function Home() {
                    <Instagram size={24} />
                 </div>
                 <img 
-                  src={`https://images.unsplash.com/photo-${1500000000000 + i}?auto=format&fit=crop&w=600`} 
+                  src={`https://images.unsplash.com/photo-${1500000000000 + i}?auto=format&fit=crop&w=400&q=60`} 
                   className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-700"
                   alt={`Instagram ${i}`}
+                  loading="lazy"
+                  decoding="async"
                 />
              </div>
            ))}
