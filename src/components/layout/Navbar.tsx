@@ -37,9 +37,9 @@ export default function Navbar() {
 
         {/* Left: Desktop Nav */}
         <div className="hidden lg:flex items-center space-x-8">
-          <Link to="/shop" className="text-xs uppercase tracking-widest text-white/70 hover:text-gold transition-colors">Shop</Link>
-          <Link to="/shop?category=Women" className="text-xs uppercase tracking-widest text-white/70 hover:text-gold transition-colors">Women</Link>
-          <Link to="/shop?category=Men" className="text-xs uppercase tracking-widest text-white/70 hover:text-gold transition-colors">Men</Link>
+          <Link to="/shop" className="text-xs uppercase tracking-widest text-white hover:text-gold transition-colors drop-shadow-sm">Shop</Link>
+          <Link to="/shop?category=Women" className="text-xs uppercase tracking-widest text-white hover:text-gold transition-colors drop-shadow-sm">Women</Link>
+          <Link to="/shop?category=Men" className="text-xs uppercase tracking-widest text-white hover:text-gold transition-colors drop-shadow-sm">Men</Link>
         </div>
 
         {/* Center: Logo */}
@@ -67,7 +67,7 @@ export default function Navbar() {
                 )}
               </div>
             ) : (
-              <button onClick={() => loginWithGoogle()} className="text-xs uppercase tracking-widest text-gold hover:text-white transition-colors">Login</button>
+              <button onClick={() => loginWithGoogle()} className="text-xs uppercase tracking-widest text-gold hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-sm border border-gold/20">Login</button>
             )}
           </div>
 

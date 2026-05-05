@@ -81,10 +81,10 @@ export default function Home() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-5xl md:text-8xl font-serif tracking-[0.2em] mb-6 drop-shadow-2xl uppercase">
+            <h1 className="text-5xl md:text-8xl font-serif tracking-[0.2em] mb-6 drop-shadow-2xl uppercase text-white">
               {config?.heroTitle || "FLOSSY KOLLECT"}
             </h1>
-            <p className="text-lg md:text-xl text-white/80 font-light tracking-widest max-w-2xl mx-auto mb-12">
+            <p className="text-lg md:text-xl text-white font-light tracking-widest max-w-2xl mx-auto mb-12 drop-shadow-md">
               {config?.heroSubtitle || "Style for Every Body. Fashion for Every Moment."}
             </p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
@@ -137,8 +137,8 @@ export default function Home() {
                   decoding="async"
                 />
                 <div className="absolute inset-0 luxury-card-overlay flex flex-col justify-end p-8">
-                  <h3 className="text-3xl font-serif mb-2">{cat.name}</h3>
-                  <p className="text-xs text-gold tracking-widest uppercase mb-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+                  <h3 className="text-3xl font-serif mb-2 text-white drop-shadow-lg">{cat.name}</h3>
+                  <p className="text-xs text-gold tracking-widest uppercase mb-4 opacity-0 group-hover:opacity-100 translate-y-4 group-hover:translate-y-0 transition-all duration-500 drop-shadow-md font-bold">
                     {cat.title}
                   </p>
                 </div>
